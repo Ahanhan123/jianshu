@@ -1,8 +1,7 @@
 import React, {Component} from 'react';
 import './App.css';
 import {Provider} from "react-redux";
-import {Routes} from 'react-router';
-import {BrowserRouter, Route} from "react-router-dom";
+import {BrowserRouter, Route, Switch} from "react-router-dom";
 import Header from "./common/Header";
 import store from './store/index'
 import Home from "./pages/home";
@@ -18,11 +17,11 @@ class App extends Component {
                     {/*<BrowserRouter> 代表路由 Route代表路由规则*/}
                     <BrowserRouter>
                         <Header/>
-                        <Routes>
+                        <Switch>
                             {/*添加exact：当访问根路径时，只显示home 当访问detail只显示detail*/}
-                            <Route path='/' element={<Home/>}/>
-                            <Route path='/detail/:id' element={<Detail/>}/>
-                        </Routes>
+                            <Route path='/' exact component={Home}/>
+                            <Route path='/detail/:id' exact component={Detail}/>
+                        </Switch>
                     </BrowserRouter>
             </Provider>
         );
