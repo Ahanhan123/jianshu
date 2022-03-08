@@ -1,0 +1,462 @@
+---------------引入路由
+mpm i react-router
+npm i react-router-dom
+当点击首页时，显示首页内容，当点击详情页时，相应详情页内容
+1. 
+    在app.js中：
+    import {Routes} from 'react-router'
+    import {BrowserRouter,Route} from "react-router-dom";
+    class App extends Component {
+        render() {
+            return (
+            //redux里有一个核心组件叫Provider，它里的所有组件都有能力去使用store里的数据
+            //也可以说为Provider组件将store里的数据都提供给了内部组件
+                <Provider store={store}>
+                    <div>
+                        <Header/>
+                        {/*<BrowserRouter> 代表路由 Route代表路由规则*/}
+                        <BrowserRouter>
+                            //Route必须放在Routes里，有时从react-router-dom引入会出错，则在react-router里引入
+                            <Routes>
+                                {/*添加exact：当访问根路径时，只显示home 当访问detail只显示detail*/}
+                                <Route path='/' element={<Home/>}/>
+                                <Route path='/detail' element={<Detail/>}/>
+                            </Routes>
+                        </BrowserRouter>
+                    </div>
+                </Provider>
+            );
+        }
+    }
+2. 在src文件夹下创建一个pages文件夹，pages文件夹下创建detail和home两个文件夹，并分别在这两个文件夹下创建index.js文件
+    相当于是Home Detail两个组件
+    当访问根路径时，显示home组件，当访问detail路径时，显示detail组件
+3. 在App.js中引入两个组件
+   import Home from "./pages/home";
+   import Detail from "./pages/detail";
+   //路由处改为 element={组件名}
+   <BrowserRouter>
+       <Routes>
+          <Route path='/' element={<Home/>}/>
+          <Route path='/detail' element={<Detail/>}/>
+       </Routes>
+   </BrowserRouter>
+-----------------home
+1.在home路由中创建一个components文件夹,里边有几个js文件，分别代表几个小组件
+2.在home中引入这几个组件
+3.所有小组间的样式文件都放在外层的home组件的style里管理就可以
+
+-----------margin
+1.让外侧盒子margin为-18px,内部的每个小盒子margin为18px,可以利用到左侧栏的宽度
+  每个小盒子的左边有空隙，但是第一个元素是靠向边界
+
+-----------TopicItem
+1.home/store/reducer.js文件下，defaultState中写入一个数组
+2.在大的reducer中创建一个小的reducer ，叫做homeReducer
+    import homeReducer from '../pages/home/store/reducer'
+    const reducer= combineReducers({
+        header:headerReducer,
+        home:homeReducer
+    })
+3.在home下的store文件夹下创建一个index.js,它是出口文件:先引入再暴露出
+    import reducer from "./reducer";
+    export {reducer};
+4.此时引入reducer改为：(会自动的到store中寻找index.js)
+    import {reducer as homeReducer} from '../pages/home/store'
+
+----------------Topic使用store
+1.由于Provider包裹着Home组件，Home组件包裹着Topic组件，所以被Provider包裹的组件都可以使用store
+2.Topic组件建立链接：
+    在Toopic.js中  import {connect} from "react-redux";
+    export修改为：
+        //从store中拿数据
+        const mapState=()=>({
+            list:state.get('home').get('topicList')
+            //list:state.getIn(['home','topicList'])
+        })
+        //修改数据
+        const mapDispatch=()=>{}
+        export default connect(mapState,mapDispatch)(Topic);
+3.遍历数组：
+        {
+            list.map((item)=>{
+                return (
+                    <TopicItem key={item.get('id')}>
+                        {/*每个item是从topicList里拿来的，每个都是一个对象，经formJS，变为了immutable对象，所以要用get获取*/}
+                        <img className="top-pic"
+                            src={item.get('imgUrl')} alt=""/>
+                            {item.get('title')}
+                    </TopicItem>
+                )
+            })
+        }
+
+---------------设置背景图片
+background: url(${(props)=>props.imgUrl});
+background-size:contain;
+
+---------------异步数据获取
+1.现在写的数据是从前端获取的，实际开发是定义接口给后端 /api/home.json
+  后端接口需要返回数据：
+    {
+        success:true,
+        data:{
+            topicList:[{
+            id:1,
+            title:'社会热点',
+            imgUrl:"https://upload.jianshu.io/admin_banners/web_images/5055/348f9e194f4062a17f587e2963b7feb0b0a5a982.png?imageMogr2/auto-orient/strip|imageView2/1/w/1250/h/540"
+            },{
+            id:2,
+            title:'手绘',
+            imgUrl:"data:image/png;base64,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"
+            }],
+            articleList:[{
+            id:1,
+            title:'微信红包',
+            desc:'今年收的最大的红包就是那个人转来的9999.00元。 这是我跟了他十八年来最大的红包，在此之前的节日礼物是五百。 估计他想开了，不再认为钱给了老...\n',
+            imgUrl:'https://www.google.com/search?q=%E5%9B%BE%E7%89%87&tbm=isch&source=iu&ictx=1&vet=1&fir=-jU8YIo2rZ_g_M%252CFjHfmgJfNrv8TM%252C_%253BVi173K0OcMvxNM%252CG8BzqB0AgRT1fM%252C_%253BvQjlM9KtkGsb_M%252CJeaDEV9l4RQZhM%252C_%253BgMhgKqwRR3MKgM%252ChkhgCagkDd5CuM%252C_%253B1KX5egJMap5EDM%252C-jVd_l-92_0iiM%252C_%253BbThQJnKEBtdITM%252ChkhgCagkDd5CuM%252C_%253B0YGIBoS_1pYKrM%252C3ya3L3m8iW-Z2M%252C_%253BXmuNNEiGx9pdAM%252CaOxbnZRUWDX-EM%252C_%253B-99Jix4WzSZgZM%252CMGaXniIihGMAuM%252C_%253BXm87Fn1REDcJHM%252CKjIRf0HP0aCqIM%252C_%253Bydow9s75zaX7cM%252CpURDfweGaS6JkM%252C_%253BeXUC-3WyVcZa-M%252ClnyPLR_MEiAVvM%252C_%253BKHmnW9aGXukGTM%252CUTcAGZ3J1nUbkM%252C_&usg=AI4_-kQDTx_URjMsDi1YtakxpV2DiwwmSg&sa=X&sqi=2&ved=2ahUKEwjM8aK0q7D2AhVQr6QKHbn4A8EQ9QF6BAgJEAE#imgrc=Vi173K0OcMvxNM'
+            },{
+            id:2,
+            title:'快要结婚了，可是我却哭了',
+            desc:'我和男友结婚日子定了，因为我在湖北，他在深圳，所以我这边5月1号嫁，他那边5月20号娶。   我是湖北农村的，他老家是广西的，临近结婚，却发...\n',
+            imgUrl:'data:image/jpeg;base64,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'
+            }],
+            recommendList:[{
+            id:1,
+            imgUrl:'https://syimg.3dmgame.com/uploadimg/upload/image/20210810/20210810112753_87564.jpg'
+            },{
+            id:2,
+            imgUrl: 'https://syimg.3dmgame.com/uploadimg/upload/image/20210810/20210810112753_87564.jpg'
+            }]
+        }
+    }
+2.后端讲以上数据返回给前端，当后端未创建好时，先要自己模拟数据,讲以上数据放在public/api/home.json文件中
+  json要求键值对必须加双引号，可以使用谷歌插件 前端助手将其转换为json格式
+3.将reducer.js文件中的数组内容清空，但必须是一个空数组
+4.通过ajax获取数据:
+    a.都是首页数据：home/index.js
+    b.引入ajax：import axios from 'axios'
+    c.借助生命周期函数：
+                componentDidMount() {
+                    axios.get('/api/home.json')
+                         .then((res)=>{
+                             //console.log(res);打印结果，json数据在res的data对象下的data中
+                             const result=res.data.data;
+                             //修改store里的数据，首先要创建一个action
+                             const action={
+                                 type:'change_home_data',
+                                 topicList:result.topicList,
+                                 articleList:result.articleList,
+                                 recommendList:result.recommendList
+                             }
+                            //组件和store建立连接，调用dispatch方法，将内容传递给store
+                            //组件使用changeHomeData()
+                            this.props.changeHomeData(action)
+                        })
+                }
+
+                //此函数返回一个对象，接收一个参数dispatch
+                const mapDispatchToProps=(dispatch)=>({
+                    changeHomeData(action){
+                        dispatch(action);
+                    }
+                })
+                //action通过此流程会发送给store，store会转发给大的reducer，则home的reducer也可以收到
+                export default connect(null,mapDispatchToProps)(Home);
+    d.home/reducer.js中：  
+            export default (state=defaultState,action)=>{
+                switch (action.type){
+                    case 'change_home_data':
+                        return state.merge({
+                            topicList:fromJS(action.topicList),
+                            articleList:fromJS(action.articleList),
+                            recommendList:fromJS(action.recommendList),
+                        })
+            
+                    default:return state;
+                }
+            }
+            
+            //state.set('topicList',fromJS(action.topicList))
+            //代表将topList里的数据更改为action传来的topicList，并且由于action.topicList是普通对象，要转为immutable对象
+            //使用方法fromJS()
+            //immutable对象有一个方法是merge，它可以同时改变多个属性值
+
+--------------总结
+1.ajax发送请求获取数据
+2.更改store里的数据：
+     1）首先创建一个action={type:"...",}
+     2）将action派发给store：
+            11.要将组件和store建立连接：connect方法
+            22.调用dispatch方法，将action传递给store
+                    a.在mapDispatch中写一个函数 changeHomeData(){}
+                    b.在ajax请求中调用此函数，参数是action，
+                    c.在a中的 changeHomeData(){dispatch（action）} 可以将action传递给store
+    3）store会转发给reducer（大的），所以所有小的reducer都会接收到
+            33.在home/reducer.js 中
+                    if type="..." (刚刚在action中传递的type)  就处理默认列表内容defaultState
+
+-------------优化
+1.home组件是一个UI组件，connect方法包装生成了一个容器组件，而UI组件不应该有太多的业务逻辑
+2.则将ajax请求放在changeHomeData函数中
+        componentDidMount() {
+            this.props.changeHomeData()
+        }
+
+        const mapDispatchToProps=(dispatch)=>({
+            changeHomeData(action){
+                axios.get('/api/home.json')
+                     .then((res)=>{
+                         //console.log(res);打印结果，json数据在res的data对象下的data中
+                         const result=res.data.data;
+                         //修改store里的数据，首先要创建一个action
+                         const action={
+                             type:'change_home_data',
+                             topicList:result.topicList,
+                             articleList:result.articleList,
+                             recommendList:result.recommendList
+                         }
+                     dispatch(action)
+                    })
+            }
+        })
+总结：当组件挂载完毕调用changeHomeData方法，在changeHomeData方法内部发送请求，创建action，创建完成后直接dispatch(action)
+
+---------------再次优化
+1.异步操作一般使用redux-thunk中间件，将其放在action中管理
+2.创建action，在actionCreators.js中：
+   创建的是一个函数，redux-thunk要求返回一个函数
+    export const getHomeInfo=()=>{
+        return (dispatch)=>{
+            axios.get('/api/home.json')
+            .then((res)=>{
+                const result=res.data.data;
+                const action={
+                    type:'change_home_data',
+                    topicList:result.topicList,
+                    articleList:result.articleList,
+                    recommendList:result.recommendList
+                }
+                dispatch(action)
+            })
+        }
+    }
+
+    同时，/store/index.js是一个出口文件，要将actionCreators.js引入并暴露出去
+        import * as actionCreators from './actionCreators'
+        export { actionCreators };
+
+3. changeHomeData中调用action ，要引入actionCreators
+   changeHomeData(){
+      const action=actionCreators.getHomeInfo();
+      dispatch(action);
+   }     
+4. getHomeInfo中要创建一个action，则将其拿出来，在上方写一个函数
+      const changeHomeData=(result)=>({
+          type:constants.CHANGE_HOME_DATA,
+          topicList:result.topicList,
+          articleList:result.articleList,
+          recommendList:result.recommendList
+      })
+
+    export const getHomeInfo=()=>{
+         return (dispatch)=>{
+            axios.get('/api/home.json')
+            .then((res)=>{
+                const result=res.data.data;
+                dispatch(changeHomeData(result))
+            })
+         }
+    }
+5. 创建出的action的类型最好是一个常量，创建一个文件constants.js 并且在index.js中引入并暴露出去
+   1. 在actionCreators文件中引入constants.js
+   2. constants.js中 export const CHANGE_HOME_DATA='home/CHANGE_HOME_DATA'
+   3. import * as constants from "./constants";
+      export {reducer,actionCreators,constants};
+   4. 修改type  type:constants.CHANGE_HOME_DATA,
+   5. 此action会传递给reducer，则将reducer.js文件下的type也进行更改
+
+------------------点击加载更多
+1.点击组件LoadMore后，出现更多列表项 onClick={getMoreList()}
+2.//点击加载更多后，调用getMoreList(),创建一个action
+    const mapDispatchToProps=(dispatch)=>({
+      getMoreList(){
+        dispatch(actionCreators.getMoreList())
+      }
+    })
+3.action的创建需要在actionCreators中：
+    /*import {List} from 'immutable';*/
+    //List 方法和fromJS方法都可以将数组转换为immutable方法，但是List只能把最外层转换为immutable，所以建议使用fromJS
+    const addHomeList=(list)=>({
+        type:constants.ADD_ARTICLE_LIST,
+        list:fromJS(list)
+    })
+    export const getMoreList=()=>{
+        return (dispatch)=>{
+            axios.get('/api/homeList.json')
+            .then((res)=>{
+                const result=res.data.data;
+                //更改store里的内容：创建action再dispatch派发出去
+                dispatch(addHomeList(result))
+            })
+        }
+    }
+4.reducer.js:
+    case constants.ADD_ARTICLE_LIST:
+        return state.set('articleList',state.get('articleList').concat(action.list))
+        //在articleList后面追加
+5.实际开发中，加载更多都是分页的
+    a.在getMoreList中传入一个参数page
+    b.在actionCreators中多传递一个 dispatch(addHomeList(result,page+1))
+    c.reducer中  case constants.ADD_ARTICLE_LIST:
+                    return state.merge({
+                        articleList:state.get('articleList').concat(action.list),
+                        articlePage:action.nextPage
+                    })
+
+-------------返回顶部功能
+1.{this.props.showScroll?<BackTop onClick={this.handleScrollTop}>回顶部</BackTop>:null}
+2. componentDidMount() {
+      this.props.changeHomeData();
+      this.bindEvents();
+   }
+   //当页面挂载完毕时，绑定事件
+   bindEvents(){
+     //在window上绑定
+     window.addEventListener('scroll',this.props.changeScrollTopShow)
+   }
+   //当组件即将卸载时，取消事件绑定
+   componentWillUnmount() {
+     window.removeEventListener('scroll',this.props.changeScrollTopShow)
+   }
+3. 创建action
+   changeScrollTopShow(){
+      if(document.documentElement.scrollTop>400){
+         dispatch(actionCreators.toggleTopShow(true));
+      }else{
+         dispatch(actionCreators.toggleTopShow(false));
+      }
+   }
+4. actionCreators：
+   export const toggleTopShow=(show)=>({
+      type:constants.TOGGLE_SCROLL_TOP,
+      show
+   })
+5. 创建完成后要触发：reducer
+   case constants.TOGGLE_SCROLL_TOP:
+     return state.set('showScroll',action.show)
+---------switch语句的优化
+   const addHomeData=(state,action)=>{
+      return state.merge({
+        articleList:state.get('articleList').concat(action.list),
+        articlePage:action.nextPage
+      })
+   }
+   case constants.ADD_ARTICLE_LIST:
+      return addHomeData(state,action);
+
+-------------------性能优化
+由于所有组件的数据都放在了store中，每当更改数据，都会被重新渲染
+可以使用shouldComponentUpdate，但是太过于麻烦
+我们将所有引入的Component都更改为PureComponent,意思是纯组件，它的底层实现了一个shouldComponentUpdate，就不需要自己手写了
+由于我们使用了immutable来管理数据，所以使用PureComponent进行结合，使性能优化，如果没有使用immutable，就不要用PureComponent
+
+------------------首页跳转到详情页面
+import {Link} from 'react-router-dom'
+在所有组件最外侧包裹一个Link标签
+<Link to="/detail"> Link代替了a标签，to代替了href
+    header组件的Logo组件外侧包裹一个Link，此时不能再使用attrs，更改为div
+    报错：由于Link组件在Header组件内，在App.js 中Header与<BrowserRouter>并列
+         则将header放在<BrowserRouter>内部才可以
+
+-------------------详情页面
+1.reducer.js:
+            import {fromJS} from "immutable";
+            import * as constants from "./constants";
+            const defaultState=fromJS({
+
+            })
+            export default (state=defaultState,action)=>{
+                switch (action.type){
+                    default:
+                        return state;
+                }
+            }
+2.index.js:
+            import reducer from './reducer'
+            import * as actionCreators from './actionCreators'
+            import * as constants from './constants'
+            export {reducer,actionCreators,constants}
+3.小的reducer都是在大的reducer中：
+            import {reducer as detailReducer} from '../pages/detail/store'
+            const reducer= combineReducers({
+                header:headerReducer,
+                home:homeReducer,
+                detail:detailReducer
+            })
+4.页面使用store里的内容：
+            在index.js中引入connect
+                import {connect} from "react-redux";
+
+                const mapStateToProps=(state)=>({
+                    title:state.getIn(['detail','title']),
+                    content:state.getIn(['detail','content'])
+                })
+                const mapDispatchToProps=()=>({
+                    
+                })
+                export default connect(mapStateToProps,mapDispatchToProps)(Detail);
+5.解决自动转译问题：
+        <Content>{this.props.content}</Content> 会出现自动转译，更改为：
+        <Content dangerouslySetInnerHTML={{__html:content}}/>
+
+---------------异步获取数据
+1。在componentDidMount(){}内写ajax请求函数      
+    componentDidMount() {
+        this.props.getDetail();
+    }
+2.getDetail()在mapDispatchToProps中定义：
+    const mapDispatchToProps=(dispatch)=>({
+        getDetail(){
+            //创建并dispatch派发action
+            dispatch(actionCreators.getDetail())
+        }
+    })
+3.在actionCreators中创建getDetail action：
+    //创建changeDetail action
+    const changeDetail=(title,content)=>({
+        type:constants.CHANGE_DETAIL,
+        title,
+        content
+    })
+    export const getDetail=()=>{
+        return (dispatch)=>{
+            axios.get('/api/detail/json')
+            .then((res)=>{
+                const result=res.data.data;
+                //派发action
+                dispatch(changeDetail(result.title,result.content))
+            })
+        }
+    }
+4.对应的所有reducer接收到action并进行处理：
+    export default (state=defaultState,action)=>{
+        switch (action.type){
+            case constants.CHANGE_DETAIL:
+                return state.merge({
+                    title:action.title,
+                    content:action.content
+        })
+        default:
+            return state;
+        }
+    }
+
+-----------------------页面路由参数的传递
+1.展示页面的组件 遍历的时候加上id  List组件
+    <Link key={index} to={"/detail/"+item.get('id')}/>
+2.Route 里的path要多添加一个参数为id
+    当路由匹配到id的时候 detail/1 1与id匹配
+    <Route path='/detail/:id' element={<Detail/>}/>
+3.拿到id 在详情页面：detail
+    
